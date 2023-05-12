@@ -53,7 +53,7 @@ try:
                     print("Input anything to continue")
                     input()
                 elif loop_timeout:
-                    print("Pausing scraper for " + loop_timeout + " seconds.")
+                    print(f"Pausing scraper for {loop_timeout} seconds.")
                     time.sleep(int(loop_timeout))
 
         loop = asyncio.get_event_loop()

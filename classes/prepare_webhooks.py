@@ -12,8 +12,5 @@ class discord(object):
             self.image = image()
 
         def add_field(self, name, value="", inline=True):
-            field = {}
-            field["name"] = name
-            field["value"] = value
-            field["inline"] = inline
+            field = {"name": name, "value": value, "inline": inline}
             self.fields.append(field)

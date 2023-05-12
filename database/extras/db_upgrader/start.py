@@ -9,10 +9,7 @@ try:
     if __name__ == "__main__":
         cwd = os.getcwd()
         cwd2 = os.path.dirname(__file__)
-        if cwd == cwd2:
-            x = os.path.realpath('../../../')
-        else:
-            x = os.path.realpath('')
+        x = os.path.realpath('../../../') if cwd == cwd2 else os.path.realpath('')
         sys.path.insert(0, x)
         while True:
             from helpers.db_helper import database_collection, run_revisions
@@ -20,18 +17,15 @@ try:
             key_list = db_collection.__dict__.items()
             key_list = list(key_list)
             string = f""
-            count = 0
-            for key, item in key_list:
+            for count, (key, item) in enumerate(key_list):
                 print
                 string += f"{str(count)} = {key} | "
-                count += 1
             print(string)
             x = input()
             # x = 0
             x = int(x)
             database_path = None
-            module = key_list[x][1]
-            if module:
+            if module := key_list[x][1]:
                 api_type = os.path.basename(module.__file__)
                 database_path = module.__file__
                 filename = f"test_{api_type}"

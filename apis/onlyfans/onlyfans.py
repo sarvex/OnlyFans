@@ -51,9 +51,7 @@ class start:
     def get_auth(self, identifier: Union[str, int]) -> Optional[create_auth]:
         final_auth = None
         for auth in self.auths:
-            if auth.id == identifier:
-                final_auth = auth
-            elif auth.username == identifier:
+            if auth.id == identifier or auth.username == identifier:
                 final_auth = auth
             if final_auth:
                 break

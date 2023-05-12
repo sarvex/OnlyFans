@@ -60,20 +60,19 @@ class create_post:
             quality_key = "source"
             source = media[quality_key]
             link = source[quality_key]
-            if link:
-                if media["type"] == "video":
-                    qualities = media["videoSources"]
-                    qualities = dict(sorted(qualities.items(), reverse=False))
-                    qualities[quality_key] = source[quality_key]
-                    for quality, quality_link in qualities.items():
-                        video_quality = video_quality.removesuffix("p")
-                        if quality == video_quality:
-                            if quality_link:
-                                link = quality_link
-                                break
-                            print
+            if link and media["type"] == "video":
+                qualities = media["videoSources"]
+                qualities = dict(sorted(qualities.items(), reverse=False))
+                qualities[quality_key] = source[quality_key]
+                for quality, quality_link in qualities.items():
+                    video_quality = video_quality.removesuffix("p")
+                    if quality == video_quality:
+                        if quality_link:
+                            link = quality_link
+                            break
                         print
                     print
+                print
         if "src" in media:
             link = media["src"]
         return link

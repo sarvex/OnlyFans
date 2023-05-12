@@ -122,9 +122,8 @@ async def fix_directories(
                     print
                 print
 
-            if os.path.exists(new_filepath):
-                if media.size:
-                    media.downloaded = True
+            if os.path.exists(new_filepath) and media.size:
+                media.downloaded = True
             if prepared_format.text:
                 pass
             media.directory = file_directory
@@ -167,19 +166,23 @@ async def start(
     root_directory = download_info["directory"]
     date_format = json_settings["date_format"]
     text_length = json_settings["text_length"]
-    reformats = {}
-    reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
-    reformats["file_directory_format"] = json_settings["file_directory_format"]
-    reformats["filename_format"] = json_settings["filename_format"]
+    reformats = {
+        "metadata_directory_format": json_settings[
+            "metadata_directory_format"
+        ],
+        "file_directory_format": json_settings["file_directory_format"],
+        "filename_format": json_settings["filename_format"],
+    }
     model_username = subscription.username
-    option = {}
-    option["site_name"] = site_name
-    option["api_type"] = api_type
-    option["profile_username"] = subscription.subscriber.username
-    option["model_username"] = model_username
-    option["date_format"] = date_format
-    option["maximum_length"] = text_length
-    option["directory"] = root_directory
+    option = {
+        "site_name": site_name,
+        "api_type": api_type,
+        "profile_username": subscription.subscriber.username,
+        "model_username": model_username,
+        "date_format": date_format,
+        "maximum_length": text_length,
+        "directory": root_directory,
+    }
     formatted = format_types(reformats).check_unique()
     unique = formatted["unique"]
     for key, value in reformats.items():

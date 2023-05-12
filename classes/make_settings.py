@@ -19,12 +19,16 @@ def fix(config={}):
 
 class config(object):
     def __init__(self, info={}, settings={}, supported={}):
+
         class Info(object):
             def __init__(self) -> None:
                 self.version = 7.2
 
+
+
         class Settings(object):
             def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", dynamic_rules_link="https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json", proxies=[], cert="",  random_string=""):
+
                 class webhooks_settings:
                     def __init__(self, option={}) -> None:
                         class webhook_template:
@@ -81,14 +85,14 @@ class config(object):
                 self.loop_timeout = loop_timeout
                 dynamic_rules_link = URL(dynamic_rules_link)
                 url_host = dynamic_rules_link.host
-                if "github.com" == url_host:
-                    if "raw" != url_host:
-                        path = dynamic_rules_link.path.replace("blob/","")
-                        dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
+                if "github.com" == url_host and "raw" != url_host:
+                    path = dynamic_rules_link.path.replace("blob/","")
+                    dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
                 self.dynamic_rules_link = str(dynamic_rules_link)
                 self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex
+
 
         def update_site_settings(options) -> dict:
             new_options = copy.copy(options)

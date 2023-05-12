@@ -26,9 +26,7 @@ class create_metadata(object):
         ).content
 
     def fix_metadata(self, metadata, standard_format=False, api_type: str = "") -> dict:
-        new_format = {}
-        new_format["version"] = 1
-        new_format["content"] = {}
+        new_format = {"version": 1, "content": {}}
         if isinstance(metadata, list):
             version = 0.3
             for m in metadata:
@@ -43,11 +41,11 @@ class create_metadata(object):
         if not version and not standard_format and metadata:
             legacy_metadata = metadata
             media_type = legacy_metadata.get("type", None)
-            if not media_type:
+            if media_type:
+                version = 0.2
+            else:
                 version = 0.1
                 media_type = api_type if api_type else media_type
-            else:
-                version = 0.2
             if version == 0.2:
                 legacy_metadata.pop("type")
             new_format["content"][media_type] = {}
@@ -72,11 +70,10 @@ class create_metadata(object):
                 print
             new_format["content"] = metadata
             print
+        elif global_version == version:
+            new_format = metadata
         else:
-            if global_version == version:
-                new_format = metadata
-            else:
-                print
+            print
         print
         if "content" not in new_format:
             print
@@ -127,8 +124,7 @@ class create_metadata(object):
         return self
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
 
 class format_content(object):
@@ -141,14 +137,18 @@ class format_content(object):
         reformat=False,
         args={},
     ):
+
+
+
         class assign_state(object):
             def __init__(self) -> None:
                 self.valid = []
                 self.invalid = []
 
             def __iter__(self):
-                for attr, value in self.__dict__.items():
-                    yield attr, value
+                yield from self.__dict__.items()
+
+
         old_content = temp_old_content.copy()
         old_content.pop("directories", None)
         new_content = media_types(assign_states=assign_state)
@@ -244,8 +244,7 @@ class format_content(object):
             return value
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
 
 class format_variables(object):
@@ -265,16 +264,11 @@ class format_variables(object):
         self.ext = "{ext}"
 
     def whitelist(self, wl):
-        new_wl = []
         new_format_copied = copy.deepcopy(self)
-        for key, value in new_format_copied:
-            if value not in wl:
-                new_wl.append(value)
-        return new_wl
+        return [value for key, value in new_format_copied if value not in wl]
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
 
 class format_types:
@@ -293,18 +287,12 @@ class format_types:
                 bl = format_variables()
                 wl = [v for k, v in bl.__dict__.items()]
                 bl = bl.whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.file_directory_format:
-                        invalid_list.append(b)
+                invalid_list = [b for b in bl if b in self.file_directory_format]
             if key == "filename_format":
                 bl = format_variables()
                 wl = [v for k, v in bl.__dict__.items()]
                 bl = bl.whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.filename_format:
-                        invalid_list.append(b)
+                invalid_list = [b for b in bl if b in self.filename_format]
             if key == "metadata_directory_format":
                 wl = [
                     "{site_name}",
@@ -314,10 +302,7 @@ class format_types:
                     "{model_username}",
                 ]
                 bl = format_variables().whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.metadata_directory_format:
-                        invalid_list.append(b)
+                invalid_list = [b for b in bl if b in self.metadata_directory_format]
             bool_status = True
             if invalid_list:
                 string += f"You cannot use {','.join(invalid_list)} in {key}. Use any from this list {','.join(wl)}"
@@ -330,34 +315,30 @@ class format_types:
         values = []
         unique = []
         new_format_copied = copy.deepcopy(self)
-        option = {}
-        option["string"] = ""
-        option["bool_status"] = True
-        option["unique"] = new_format_copied
+        option = {"string": "", "bool_status": True, "unique": new_format_copied}
         f = format_variables()
         for key, value in self:
             if key == "file_directory_format":
-                unique = ["{media_id}", "{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
+                unique = ["{media_id}", "{model_username}"]
                 option["unique"].file_directory_format = unique
+                e = [x for x in values if x in unique]
             elif key == "filename_format":
                 values = []
-                unique = ["{media_id}", "{filename}"]
                 value = os.path.normpath(value)
-                for key2, value2 in f:
-                    if value2 in value:
-                        values.append(value2)
+                values.extend(value2 for key2, value2 in f if value2 in value)
+                unique = ["{media_id}", "{filename}"]
                 option["unique"].filename_format = unique
+                e = [x for x in unique if x in values]
             elif key == "metadata_directory_format":
-                unique = ["{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
+                unique = ["{model_username}"]
                 option["unique"].metadata_directory_format = unique
-            if key != "filename_format":
                 e = [x for x in values if x in unique]
             else:
-                e = [x for x in unique if x in values]
+                e = [x for x in values if x in unique]
             if e:
                 setattr(option["unique"], key, e)
             else:
@@ -368,8 +349,7 @@ class format_types:
         return option
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
 
 class prepare_reformat(object):
@@ -400,21 +380,19 @@ class prepare_reformat(object):
                 print
                 if isinstance(value, str):
                     key = main_helper.find_between(value, "{", "}")
-                    e = getattr(format_variables2, key, None)
-                    if e:
+                    if e := getattr(format_variables2, key, None):
                         setattr(self, key, "")
                         print
         print
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
     async def reformat(self, unformatted_list) -> list[str]:
         x = []
         format_variables2 = format_variables()
         for key, unformatted_item in unformatted_list.items():
-            if "filename_format" == key:
+            if key == "filename_format":
                 unformatted_item = os.path.join(x[1], unformatted_item)
                 print
             string = await main_helper.reformat(self, unformatted_item)

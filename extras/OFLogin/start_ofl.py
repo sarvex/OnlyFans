@@ -20,9 +20,11 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
         matches = ["geckodriver.exe","geckodriver"]
         driver_paths = list(
             map(lambda match: os.path.join(directory, match), matches))
-        found_paths = [
-            driver_path for driver_path in driver_paths if os.path.exists(driver_path)]
-        if found_paths:
+        if found_paths := [
+            driver_path
+            for driver_path in driver_paths
+            if os.path.exists(driver_path)
+        ]:
             driver_path = found_paths[0]
             opts = webdriver.FirefoxOptions()
             # opts.add_argument("--headless")

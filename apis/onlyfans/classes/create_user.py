@@ -219,20 +219,15 @@ class create_user:
         self.__raw__ = option
 
     def get_link(self):
-        link = f"https://onlyfans.com/{self.username}"
-        return link
+        return f"https://onlyfans.com/{self.username}"
 
     def is_me(self) -> bool:
-        status = False
-        if self.email:
-            status = True
-        return status
+        return bool(self.email)
 
     async def get_stories(self, refresh=True, limit=100, offset=0) -> list:
         api_type = "stories"
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            if result := handle_refresh(self, api_type):
                 return result
         if not self.hasStories:
             return []
@@ -251,10 +246,9 @@ class create_user:
     async def get_highlights(
         self, identifier="", refresh=True, limit=100, offset=0, hightlight_id=""
     ) -> list:
-        api_type = "highlights"
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "highlights"
+            if result := handle_refresh(self, api_type):
                 return result
         if not identifier:
             identifier = self.id
@@ -278,8 +272,7 @@ class create_user:
     ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            if result := handle_refresh(self, api_type):
                 return result
         if links is None:
             links = []
@@ -311,10 +304,7 @@ class create_user:
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
         response = await self.session_manager.json_request(link)
-        if isinstance(response, dict):
-            final_result = create_post(response, self)
-            return final_result
-        return response
+        return create_post(response, self) if isinstance(response, dict) else response
 
     async def get_messages(
         self,
@@ -324,12 +314,11 @@ class create_user:
         refresh=True,
         inside_loop=False,
     ) -> list:
-        api_type = "messages"
         if not self.subscriber or self.is_me():
             return []
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "messages"
+            if result := handle_refresh(self, api_type):
                 return result
         if links is None:
             links = []
@@ -383,15 +372,13 @@ class create_user:
         if isinstance(response, dict):
             results = [x for x in response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
-            final_result = create_message.create_message(result, self)
-            return final_result
+            return create_message.create_message(result, self)
         return response
 
     async def get_archived_stories(self, refresh=True, limit=100, offset=0):
-        api_type = "archived_stories"
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "archived_stories"
+            if result := handle_refresh(self, api_type):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.session_manager.json_request(link)
@@ -404,8 +391,7 @@ class create_user:
     ) -> list:
         api_type = "archived_posts"
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            if result := handle_refresh(self, api_type):
                 return result
         if links is None:
             links = []
@@ -431,12 +417,9 @@ class create_user:
     async def get_archived(self, api):
         items = []
         if self.is_me():
-            item = {}
-            item["type"] = "Stories"
-            item["results"] = [await self.get_archived_stories()]
+            item = {"type": "Stories", "results": [await self.get_archived_stories()]}
             items.append(item)
-        item = {}
-        item["type"] = "Posts"
+        item = {"type": "Posts"}
         # item["results"] = test
         item["results"] = await self.get_archived_posts()
         items.append(item)
@@ -450,8 +433,7 @@ class create_user:
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_chat
-        results = await self.session_manager.json_request(link)
-        return results
+        return await self.session_manager.json_request(link)
 
     async def search_messages(
         self, identifier="", text="", refresh=True, limit=10, offset=0
@@ -462,18 +444,15 @@ class create_user:
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_messages
-        results = await self.session_manager.json_request(link)
-        return results
+        return await self.session_manager.json_request(link)
 
     async def like(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="POST")
-        return results
+        return await self.session_manager.json_request(link, method="POST")
 
     async def unlike(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="DELETE")
-        return results
+        return await self.session_manager.json_request(link, method="DELETE")
 
     async def subscription_price(self):
         """
@@ -502,14 +481,13 @@ class create_user:
         }
         if self.subscriber.creditBalance >= subscription_price:
             link = endpoint_links().pay
-            result = await self.session_manager.json_request(
+            return await self.session_manager.json_request(
                 link, method="POST", payload=x
             )
         else:
-            result = error_details(
+            return error_details(
                 {"code": 2011, "message": "Insufficient Credit Balance"}
             )
-        return result
 
     def set_scraped(self, name, scraped):
         setattr(self.scraped, name, scraped)

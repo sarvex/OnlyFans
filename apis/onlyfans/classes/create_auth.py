@@ -53,8 +53,7 @@ class create_auth(create_user):
         if not data["username"]:
             data["username"] = f"u{data['id']}"
         for key, value in data.items():
-            found_attr = hasattr(self, key)
-            if found_attr:
+            if found_attr := hasattr(self, key):
                 setattr(self, key, value)
 
     async def login(self, max_attempts: int = 10, guest: bool = False):
@@ -84,32 +83,30 @@ class create_auth(create_user):
             count += 1
 
             async def resolve_auth(auth: create_auth):
-                if self.errors:
-                    error = self.errors[-1]
-                    print(error.message)
-                    if error.code == 101:
-                        if auth_items.support_2fa:
-                            link = f"https://onlyfans.com/api2/v2/users/otp/check"
-                            count = 1
-                            max_count = 3
-                            while count < max_count + 1:
-                                print(
-                                    "2FA Attempt " + str(count) + "/" + str(max_count)
-                                )
-                                code = input("Enter 2FA Code\n")
-                                data = {"code": code, "rememberMe": True}
-                                response = await self.session_manager.json_request(
-                                    link, method="POST", payload=data
-                                )
-                                if isinstance(response, error_details):
-                                    error.message = response.message
-                                    count += 1
-                                else:
-                                    print("Success")
-                                    auth.active = False
-                                    auth.errors.remove(error)
-                                    await self.get_authed()
-                                    break
+                if not self.errors:
+                    return
+                error = self.errors[-1]
+                print(error.message)
+                if error.code == 101 and auth_items.support_2fa:
+                    link = "https://onlyfans.com/api2/v2/users/otp/check"
+                    count = 1
+                    max_count = 3
+                    while count < max_count + 1:
+                        print(f"2FA Attempt {count}/{max_count}")
+                        code = input("Enter 2FA Code\n")
+                        data = {"code": code, "rememberMe": True}
+                        response = await self.session_manager.json_request(
+                            link, method="POST", payload=data
+                        )
+                        if isinstance(response, error_details):
+                            error.message = response.message
+                            count += 1
+                        else:
+                            print("Success")
+                            auth.active = False
+                            auth.errors.remove(error)
+                            await self.get_authed()
+                            break
 
             await resolve_auth(self)
             if not self.active:
@@ -160,26 +157,18 @@ class create_auth(create_user):
         else:
             self.errors.clear()
             return
-        error_message = error.message
         error_code = error.code
-        if error_code == 0:
-            pass
-        elif error_code == 101:
-            error_message = "Blocked by 2FA."
-        elif error_code == 401:
-            # Session/Refresh
-            pass
+        error_message = "Blocked by 2FA." if error_code == 101 else error.message
         error.code = error_code
         error.message = error_message
         self.errors.append(error)
 
     async def get_lists(self, refresh=True, limit=100, offset=0):
-        api_type = "lists"
         if not self.active:
             return
         if not refresh:
-            subscriptions = handle_refresh(self, api_type)
-            return subscriptions
+            api_type = "lists"
+            return handle_refresh(self, api_type)
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
         results = await self.session_manager.json_request(link)
         self.lists = results
@@ -215,12 +204,14 @@ class create_auth(create_user):
         self, check: bool = False, identifier="", limit=100, offset=0
     ) -> Union[create_user, None]:
         subscriptions = await self.get_subscriptions(refresh=False)
-        valid = None
-        for subscription in subscriptions:
-            if identifier == subscription.username or identifier == subscription.id:
-                valid = subscription
-                break
-        return valid
+        return next(
+            (
+                subscription
+                for subscription in subscriptions
+                if identifier in [subscription.username, subscription.id]
+            ),
+            None,
+        )
 
     async def get_subscriptions(
         self,
@@ -339,12 +330,11 @@ class create_auth(create_user):
         refresh=True,
         inside_loop=False,
     ) -> list:
-        api_type = "chats"
         if not self.active:
             return []
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "chats"
+            if result := handle_refresh(self, api_type):
                 return result
         if links is None:
             links = []
@@ -390,12 +380,11 @@ class create_auth(create_user):
     async def get_mass_messages(
         self, resume=None, refresh=True, limit=10, offset=0
     ) -> list:
-        api_type = "mass_messages"
         if not self.active:
             return []
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "mass_messages"
+            if result := handle_refresh(self, api_type):
                 return result
         link = endpoint_links(
             global_limit=limit, global_offset=offset
@@ -433,12 +422,11 @@ class create_auth(create_user):
         offset: int = 0,
         inside_loop: bool = False,
     ) -> list[Union[create_message, create_post]]:
-        api_type = "paid_content"
         if not self.active:
             return []
         if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
+            api_type = "paid_content"
+            if result := handle_refresh(self, api_type):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
